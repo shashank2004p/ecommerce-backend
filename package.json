@@ -1,0 +1,27 @@
+{
+  "name": "spsellbe",
+  "version": "1.0.0",
+  "description": "Production-ready backend for SPSell electronics e-commerce",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "seed:powerbank": "node scripts/seed-powerbank.js",
+    "seed:nordbuds": "node scripts/seed-nordbuds.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.8.0",
+    "razorpay": "^2.9.6"
+  }
+}
