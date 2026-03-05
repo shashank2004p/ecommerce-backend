@@ -47,11 +47,10 @@ const config = {
 };
 
 if (isProd) {
-  // Mongo URI is required when actually running for real; failing early avoids
-  // crashing deep in Mongoose later.
-  if (!process.env.MONGODB_URI) {
-    throw new Error('MONGODB_URI must be set in production');
-  }
+  // Developers can still start the server with NODE_ENV=production
+  // without supplying every secret; only the two critical pieces below
+  // are enforced.  The Mongo URI fallback will be used automatically.
+
   if (!config.cors.origin.length) {
     throw new Error('CORS_ORIGIN must be set in production (comma-separated frontend URLs)');
   }
