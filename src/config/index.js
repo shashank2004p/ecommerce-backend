@@ -20,7 +20,8 @@ const config = {
   env: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT, 10) || 3000,
   mongoose: {
-    uri: requireEnv('MONGODB_URI') || 'mongodb://localhost:27017/spsell',
+    // prefer the provided URI but fall back to localhost when developing
+    uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/spsell',
     poolSize: parseInt(process.env.MONGODB_POOL_SIZE, 10) || 10,
   },
   jwt: {
@@ -39,6 +40,11 @@ const config = {
 };
 
 if (isProd) {
+  // Mongo URI is required when actually running for real; failing early avoids
+  // crashing deep in Mongoose later.
+  if (!process.env.MONGODB_URI) {
+    throw new Error('MONGODB_URI must be set in production');
+  }
   if (!config.cors.origin.length) {
     throw new Error('CORS_ORIGIN must be set in production (comma-separated frontend URLs)');
   }
