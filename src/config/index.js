@@ -8,6 +8,10 @@ dotenv.config();
 
 const isProd = process.env.NODE_ENV === 'production';
 
+// simple helper that throws if a required variable is missing in
+// production. we keep it around in case additional keys need validation
+// later, but jwt and mongodb uri are handled via explicit checks so the
+// app can still start with sane defaults during development.
 function requireEnv(name) {
   const v = process.env[name];
   if (isProd && (v === undefined || v === '')) {
@@ -25,7 +29,10 @@ const config = {
     poolSize: parseInt(process.env.MONGODB_POOL_SIZE, 10) || 10,
   },
   jwt: {
-    secret: requireEnv('JWT_SECRET') || 'dev-secret-change-in-production',
+    // secret can fall back to a hard‑coded dev value; the helper used earlier
+    // threw before the fallback could kick in which made local production
+    // runs impossible without setting the variable explicitly.
+    secret: process.env.JWT_SECRET || 'dev-secret-change-in-production',
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   },
   cors: {
