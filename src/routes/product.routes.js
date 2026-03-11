@@ -12,6 +12,7 @@ import { Router } from 'express';
 import * as productController from '../controllers/product.controller.js';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { requireAdmin } from '../middlewares/admin.middleware.js';
+import { uploadProductImage } from '../middlewares/upload.middleware.js';
 
 const router = Router();
 
@@ -21,7 +22,7 @@ router.get('/hero', productController.getHeroProduct);
 router.get('/', productController.listProducts);
 router.get('/:id', productController.getProduct);
 
-router.post('/', productController.createProduct);
+router.post('/', authenticate, requireAdmin, uploadProductImage, productController.createProduct);
 router.patch('/:id', authenticate, requireAdmin, productController.updateProduct);
 router.delete('/:id', authenticate, requireAdmin, productController.deleteProduct);
 

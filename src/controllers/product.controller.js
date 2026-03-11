@@ -6,7 +6,14 @@ import { success, error } from '../utils/ApiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 export const createProduct = asyncHandler(async (req, res) => {
-  const data = await productService.createProduct(req.body);
+  const body = { ...req.body };
+  if (req.file?.filename) {
+    const imagePath = `/asset/products/${req.file.filename}`;
+    const existing = Array.isArray(body.images) ? body.images : body.images ? [body.images] : [];
+    body.images = [imagePath, ...existing.filter(Boolean)];
+  }
+
+  const data = await productService.createProduct(body);
   return success(res, data, 'Product created', 201);
 });
 
