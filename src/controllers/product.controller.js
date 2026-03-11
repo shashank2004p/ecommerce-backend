@@ -7,10 +7,17 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 
 export const createProduct = asyncHandler(async (req, res) => {
   const body = { ...req.body };
-  if (req.file?.filename) {
-    const imagePath = `/asset/products/${req.file.filename}`;
+  const uploadedFiles = [];
+  if (req.files?.image?.length) uploadedFiles.push(...req.files.image);
+  if (req.files?.images?.length) uploadedFiles.push(...req.files.images);
+
+  if (uploadedFiles.length) {
+    const imagePaths = uploadedFiles
+      .filter((f) => f?.filename)
+      .map((f) => `/asset/products/${f.filename}`);
+
     const existing = Array.isArray(body.images) ? body.images : body.images ? [body.images] : [];
-    body.images = [imagePath, ...existing.filter(Boolean)];
+    body.images = [...imagePaths, ...existing].filter(Boolean);
   }
 
   const data = await productService.createProduct(body);
