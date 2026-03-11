@@ -21,7 +21,7 @@ router.get('/hero', productController.getHeroProduct);
 router.get('/', productController.listProducts);
 router.get('/:id', productController.getProduct);
 
-router.post('/', authenticate, requireAdmin, productController.createProduct);
+router.post('/', productController.createProduct);
 router.patch('/:id', authenticate, requireAdmin, productController.updateProduct);
 router.delete('/:id', authenticate, requireAdmin, productController.deleteProduct);
 
