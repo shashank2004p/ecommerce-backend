@@ -8,7 +8,6 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 export const razorpayWebhook = asyncHandler(async (req, res) => {
   const signature = req.headers['x-razorpay-signature'];
   const rawBody = req.body; // Buffer (because this route uses express.raw)
-
   let payload;
   try {
     payload = JSON.parse(rawBody.toString('utf8'));
