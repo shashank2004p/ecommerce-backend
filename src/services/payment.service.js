@@ -22,13 +22,28 @@ function getRazorpayInstance() {
  * Create a Razorpay order for the given DB order. Amount in paise (INR).
  * Updates order with razorpayOrderId.
  */
-export async function createRazorpayOrder(orderId) {
+function assertOrderAccess(order, userId) {
+  // If the order is tied to a user, only that user can pay/verify it.
+  if (order.userId && userId && order.userId.toString() !== userId) {
+    const err = new Error('Order not found');
+    err.statusCode = 404;
+    throw err;
+  }
+  if (order.userId && !userId) {
+    const err = new Error('Authentication required for this order');
+    err.statusCode = 401;
+    throw err;
+  }
+}
+
+export async function createRazorpayOrder(orderId, userId = null) {
   const order = await Order.findById(orderId);
   if (!order) {
     const err = new Error('Order not found');
     err.statusCode = 404;
     throw err;
   }
+  assertOrderAccess(order, userId);
   if (order.paymentStatus === 'paid') {
     const err = new Error('Order is already paid');
     err.statusCode = 400;
@@ -77,7 +92,7 @@ export function verifySignature(razorpayOrderId, razorpayPaymentId, signature) {
   return crypto.timingSafeEqual(sigBuf, expBuf);
 }
 
-export async function verifyAndCapturePayment(orderId, { razorpay_order_id, razorpay_payment_id, razorpay_signature }) {
+export async function verifyAndCapturePayment(orderId, { razorpay_order_id, razorpay_payment_id, razorpay_signature }, userId = null) {
   if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
     const err = new Error('Missing payment verification fields');
     err.statusCode = 400;
@@ -89,6 +104,7 @@ export async function verifyAndCapturePayment(orderId, { razorpay_order_id, razo
     err.statusCode = 404;
     throw err;
   }
+  assertOrderAccess(order, userId);
   if (order.razorpayOrderId !== razorpay_order_id) {
     const err = new Error('Razorpay order does not match');
     err.statusCode = 400;
@@ -108,4 +124,63 @@ export async function verifyAndCapturePayment(orderId, { razorpay_order_id, razo
   order.razorpayPaymentId = razorpay_payment_id;
   await order.save();
   return { verified: true };
+}
+
+function verifyWebhookSignature(rawBody, signature) {
+  const secret = config.razorpay.webhookSecret;
+  if (!secret) {
+    const err = new Error('Razorpay webhook is not configured. Set RAZORPAY_WEBHOOK_SECRET.');
+    err.statusCode = 503;
+    throw err;
+  }
+  if (!signature) return false;
+  const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+  const sigBuf = Buffer.from(signature, 'utf8');
+  const expBuf = Buffer.from(expected, 'utf8');
+  if (sigBuf.length !== expBuf.length) return false;
+  return crypto.timingSafeEqual(sigBuf, expBuf);
+}
+
+/**
+ * Razorpay webhook handler.
+ * - Verifies x-razorpay-signature against raw request body.
+ * - Updates matching Order by receipt (our DB orderId) where possible.
+ */
+export async function handleRazorpayWebhook({ rawBody, signature, payload }) {
+  const ok = verifyWebhookSignature(rawBody, signature);
+  if (!ok) {
+    const err = new Error('Invalid webhook signature');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // We mainly rely on order entity receipt/notes to map back to our DB orderId.
+  const event = payload?.event;
+  const orderEntity = payload?.payload?.order?.entity;
+  const paymentEntity = payload?.payload?.payment?.entity;
+
+  const receipt = orderEntity?.receipt || orderEntity?.notes?.orderId || paymentEntity?.notes?.orderId;
+  const orderId = receipt || null;
+
+  if (!orderId) {
+    return { received: true, ignored: true, reason: 'No receipt/orderId in webhook payload' };
+  }
+
+  const update = {};
+  const paymentId = paymentEntity?.id;
+
+  if (event === 'payment.captured' || event === 'order.paid') {
+    update.paymentStatus = 'paid';
+    if (paymentId) update.razorpayPaymentId = paymentId;
+    if (orderEntity?.id) update.razorpayOrderId = orderEntity.id;
+  } else if (event === 'payment.failed') {
+    update.paymentStatus = 'failed';
+    if (paymentId) update.razorpayPaymentId = paymentId;
+    if (orderEntity?.id) update.razorpayOrderId = orderEntity.id;
+  } else {
+    return { received: true, ignored: true, reason: `Unhandled event: ${event}` };
+  }
+
+  await Order.findByIdAndUpdate(orderId, update, { new: false });
+  return { received: true, updated: true, event };
 }

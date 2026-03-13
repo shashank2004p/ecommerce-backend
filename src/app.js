@@ -14,6 +14,7 @@ import authRoutes from './routes/auth.routes.js';
 import productRoutes from './routes/product.routes.js';
 import cartRoutes from './routes/cart.routes.js';
 import orderRoutes from './routes/order.routes.js';
+import paymentRoutes from './routes/payment.routes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -56,6 +57,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
+// Razorpay webhook requires raw body for signature verification
+app.use('/api/payments/razorpay/webhook', express.raw({ type: 'application/json' }));
+
 // Body parsing: larger limit for orders, then default
 app.use('/api/orders', express.json({ limit: '500kb' }));
 app.use(express.json({ limit: '100kb' }));
@@ -82,6 +86,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // 404 for unknown API paths
 app.use('/api/*', (req, res) => {

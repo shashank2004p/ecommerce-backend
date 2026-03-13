@@ -43,6 +43,7 @@ const config = {
   razorpay: {
     keyId: process.env.RAZORPAY_KEY_ID || '',
     keySecret: process.env.RAZORPAY_KEY_SECRET || '',
+    webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || '',
   },
 };
 
@@ -56,6 +57,9 @@ if (isProd) {
   }
   if (!config.razorpay.keyId || !config.razorpay.keySecret) {
     throw new Error('RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET must be set in production');
+  }
+  if (!config.razorpay.webhookSecret) {
+    throw new Error('RAZORPAY_WEBHOOK_SECRET must be set in production');
   }
 }
 

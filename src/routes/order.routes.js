@@ -14,8 +14,8 @@ const router = Router();
 
 router.post('/', optionalAuth, orderController.createOrder);
 router.get('/', authenticate, orderController.listOrders);
-router.post('/:id/create-payment', orderController.createPayment);
-router.post('/:id/verify-payment', orderController.verifyPayment);
+router.post('/:id/create-payment', optionalAuth, orderController.createPayment);
+router.post('/:id/verify-payment', optionalAuth, orderController.verifyPayment);
 router.get('/:id', authenticate, orderController.getOrder);
 
 export default router;

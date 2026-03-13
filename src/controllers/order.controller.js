@@ -13,12 +13,14 @@ export const createOrder = asyncHandler(async (req, res) => {
 });
 
 export const createPayment = asyncHandler(async (req, res) => {
-  const data = await paymentService.createRazorpayOrder(req.params.id);
+  const userId = req.user?.id || null;
+  const data = await paymentService.createRazorpayOrder(req.params.id, userId);
   return success(res, data, 'Payment order created');
 });
 
 export const verifyPayment = asyncHandler(async (req, res) => {
-  const data = await paymentService.verifyAndCapturePayment(req.params.id, req.body);
+  const userId = req.user?.id || null;
+  const data = await paymentService.verifyAndCapturePayment(req.params.id, req.body, userId);
   return success(res, data, 'Payment verified');
 });
 
