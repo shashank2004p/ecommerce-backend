@@ -66,7 +66,10 @@ app.use(express.json({ limit: '100kb' }));
 app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
 // Static assets (product images)
+// Primary mount (backward compatible)
 app.use('/asset', express.static(path.join(__dirname, '..', 'asset')));
+// Alias under /api for frontend paths like /api/asset/...
+app.use('/api/asset', express.static(path.join(__dirname, '..', 'asset')));
 
 // Health: liveness (server up)
 app.get('/health', (req, res) => {
