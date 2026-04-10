@@ -23,7 +23,7 @@ router.get('/', productController.listProducts);
 router.get('/:id', productController.getProduct);
 
 router.post('/', uploadProductImage, productController.createProduct);
-router.patch('/:id', uploadProductImage, productController.updateProduct);
+router.put('/:id', uploadProductImage, productController.updateProduct);
 router.delete('/:id', productController.deleteProduct);
 
 export default router;
