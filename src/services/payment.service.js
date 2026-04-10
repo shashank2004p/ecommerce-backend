@@ -120,10 +120,44 @@ export async function verifyAndCapturePayment(orderId, { razorpay_order_id, razo
     err.statusCode = 400;
     throw err;
   }
+
+  // Confirm server-side with Razorpay API as a second check:
+  // - payment belongs to our order
+  // - amount matches
+  // - status is captured (or capture if authorized)
+  const instance = getRazorpayInstance();
+  const payment = await instance.payments.fetch(razorpay_payment_id);
+  const expectedAmount = Math.round(Number(order.total) * 100);
+
+  if (payment?.order_id !== razorpay_order_id) {
+    await Order.findByIdAndUpdate(orderId, { paymentStatus: 'failed' });
+    const err = new Error('Payment does not belong to this order');
+    err.statusCode = 400;
+    throw err;
+  }
+  if (Number(payment?.amount) !== expectedAmount) {
+    await Order.findByIdAndUpdate(orderId, { paymentStatus: 'failed' });
+    const err = new Error('Paid amount does not match order total');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  let finalPayment = payment;
+  if (payment?.status === 'authorized') {
+    finalPayment = await instance.payments.capture(razorpay_payment_id, expectedAmount, 'INR');
+  }
+
+  if (finalPayment?.status !== 'captured') {
+    await Order.findByIdAndUpdate(orderId, { paymentStatus: 'failed', razorpayPaymentId: razorpay_payment_id });
+    const err = new Error('Payment not captured');
+    err.statusCode = 400;
+    throw err;
+  }
+
   order.paymentStatus = 'paid';
   order.razorpayPaymentId = razorpay_payment_id;
   await order.save();
-  return { verified: true };
+  return { verified: true, captured: true };
 }
 
 function verifyWebhookSignature(rawBody, signature) {

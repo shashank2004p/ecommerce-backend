@@ -28,6 +28,8 @@ function toOrderResponse(order) {
     total: o.total,
     paymentMethod: o.paymentMethod,
     paymentStatus: o.paymentStatus,
+    razorpayOrderId: o.razorpayOrderId,
+    razorpayPaymentId: o.razorpayPaymentId,
     status: o.status,
     createdAt: o.createdAt,
   };
@@ -60,11 +62,14 @@ export async function createOrder(userId, { address, items, total, paymentMethod
     orderItems.push({ productId: product._id, quantity: qty, priceAtOrder });
     computedTotal += priceAtOrder * qty;
   }
+
+  // Never trust totals coming from the client.
+  // Total is derived from current product prices/discounts at order time.
   const order = await Order.create({
     userId: userId || undefined,
     address: address || {},
     items: orderItems,
-    total: total != null ? Number(total) : computedTotal,
+    total: computedTotal,
     paymentMethod: 'online',
     paymentStatus: 'pending',
     status: 'pending',
