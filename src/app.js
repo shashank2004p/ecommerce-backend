@@ -51,7 +51,8 @@ app.use('/api/auth/register', authOrderLimiter);
 app.use('/api/orders', authOrderLimiter);
 
 app.use(cors({
-  origin: config.cors.origin,
+  // Allow all origins (reflect request origin). Required when credentials are enabled.
+  origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
