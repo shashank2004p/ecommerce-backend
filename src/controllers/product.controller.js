@@ -2,30 +2,34 @@
  * Product controller: CRUD and list with filters/pagination.
  */
 import * as productService from '../services/product.service.js';
-import { success, error } from '../utils/ApiResponse.js';
+import { success } from '../utils/ApiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
-export const createProduct = asyncHandler(async (req, res) => {
-  const body = { ...req.body };
+function mergeUploadedImagesIntoBody(req, body) {
   const uploadedFiles = [];
   if (req.files?.image?.length) uploadedFiles.push(...req.files.image);
   if (req.files?.images?.length) uploadedFiles.push(...req.files.images);
 
-  if (uploadedFiles.length) {
-    const imagePaths = uploadedFiles
-      .filter((f) => f?.filename)
-      .map((f) => `/asset/products/${f.filename}`);
+  if (!uploadedFiles.length) return body;
 
-    const existing = Array.isArray(body.images) ? body.images : body.images ? [body.images] : [];
-    body.images = [...imagePaths, ...existing].filter(Boolean);
-  }
+  const imagePaths = uploadedFiles
+    .filter((f) => f?.filename)
+    .map((f) => `/asset/products/${f.filename}`);
+
+  const existing = Array.isArray(body.images) ? body.images : body.images ? [body.images] : [];
+  return { ...body, images: [...imagePaths, ...existing].filter(Boolean) };
+}
+
+export const createProduct = asyncHandler(async (req, res) => {
+  const body = mergeUploadedImagesIntoBody(req, { ...req.body });
 
   const data = await productService.createProduct(body);
   return success(res, data, 'Product created', 201);
 });
 
 export const updateProduct = asyncHandler(async (req, res) => {
-  const data = await productService.updateProduct(req.params.id, req.body);
+  const body = mergeUploadedImagesIntoBody(req, { ...req.body });
+  const data = await productService.updateProduct(req.params.id, body);
   return success(res, data, 'Product updated');
 });
 

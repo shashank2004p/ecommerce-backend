@@ -22,8 +22,9 @@ router.get('/hero', productController.getHeroProduct);
 router.get('/', productController.listProducts);
 router.get('/:id', productController.getProduct);
 
-router.post('/', uploadProductImage, productController.createProduct);
-router.put('/:id', uploadProductImage, productController.updateProduct);
-router.delete('/:id', productController.deleteProduct);
+router.post('/', authenticate, requireAdmin, uploadProductImage, productController.createProduct);
+router.patch('/:id', authenticate, requireAdmin, uploadProductImage, productController.updateProduct);
+router.put('/:id', authenticate, requireAdmin, uploadProductImage, productController.updateProduct);
+router.delete('/:id', authenticate, requireAdmin, productController.deleteProduct);
 
 export default router;

@@ -32,7 +32,7 @@ export async function createProduct(body) {
 }
 
 export async function updateProduct(id, body) {
-  const product = await Product.findByIdAndUpdate(id, body, { new: true });
+  const product = await Product.findByIdAndUpdate(id, body, { new: true, runValidators: true });
   if (!product) {
     const err = new Error('Product not found');
     err.statusCode = 404;
